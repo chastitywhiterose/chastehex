@@ -28,15 +28,6 @@ sub ebx,eax
 mov eax,ebx
 mov [arg_length],eax
 
-;display the arg string to make sure it is working correctly
-;mov eax,[arg_start]
-;call putstring
-;call putline
-
-;print the length in bytes of the arg string
-;mov eax,[arg_length]
-;call putint
-
 ;this loop will filter the string, replacing all spaces with zero
 mov ebx,[arg_start]
 arg_filter:
@@ -52,8 +43,7 @@ arg_filter_end:
 
 ;optionally print first arg (name of program)
 ;mov eax,[arg_start]
-;call putstring
-;call putline
+;call putstr_and_line
 
 ;get next arg (first one after name of program)
 call get_next_arg
@@ -61,11 +51,7 @@ cmp eax,[arg_end]
 jz help
 
 mov [file_name],eax
-mov eax,file_open_message
-call putstring
-mov eax,[file_name]
-call putstring
-call putline
+call putstr_and_line
 
 jmp open_sesame
 
@@ -106,9 +92,6 @@ file_ok:
 
 mov [file_handle],eax
 
-mov [int_newline],0 ;disable automatic printing of newlines after putint
-;we will be manually printing spaces or newlines depending on context
-
 ;before we proceed, we also check for more arguments.
 
 ;get next arg (first one after name of program)
@@ -120,11 +103,6 @@ jz hexdump ;proceed to normal hex dump if no more args
 
 call strint
 mov [file_offset],eax
-mov eax,file_seek_message
-call putstring
-mov eax,[file_offset]
-call putint
-call putline
 
 ;seek to address of file with SetFilePointer function
 ;https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-setfilepointer
@@ -155,14 +133,12 @@ call [WriteFile]
 mov eax,[file_offset]
 inc [file_offset]
 mov [int_width],8
-call putint
-call putspace
+call putint_and_space
 
 mov eax,0
 mov al,[byte_array]
 mov [int_width],2
-call putint
-call putline
+call putint_and_line
 
 ;check for more args
 call get_next_arg
@@ -184,20 +160,24 @@ call [ReadFile]
 
 cmp [bytes_read],1 
 jz print_byte ;if less than one bytes read, there is an error
-call show_eof
+
+mov eax,[file_offset]
+mov [int_width],8
+call putint_and_space
+mov eax,end_of_file
+call putstr_and_line
+
 jmp main_end
 
 print_byte:
 mov eax,[file_offset]
 mov [int_width],8
-call putint
-call putspace
+call putint_and_space
 
 mov eax,0
 mov al,[byte_array]
 mov [int_width],2
-call putint
-call putline
+call putint_and_line
 
 jmp main_end
 
@@ -219,14 +199,7 @@ mov eax,[bytes_read]
 cmp eax,0
 jnz read_ok ;if more than zero bytes read, proceed to display
 
-;if the offset is zero, display EOF to indicate empty file
-;otherwise, end without displaying this because there should already be bytes printed to the display
-cmp [file_offset],0
-jnz main_end
-
-call show_eof
-
-jmp main_end
+jmp eof_end
 
 read_ok:
 call print_bytes_row
@@ -237,28 +210,18 @@ print_EOF:
 
 mov eax,[file_offset]
 mov [int_width],8
-call putint
-call putspace
+call putint_and_space
 
 mov eax,end_of_file
-call putstring
-call putline
+call putstr_and_line
 
 jmp main_end
 
 
-
-
-;this loop is very safe because it only prints arguments if they are valid
-;if the end of the args are reached by comparison of eax with [arg_end]
-;then it will jump to main_end and proceed from there
-args_list:
-call get_next_arg
-cmp eax,[arg_end]
-jz main_end
-call putstring
-call putline
-jmp args_list
+eof_end:
+;before we end the program, let the user know End Of File was reached
+mov eax,end_of_file
+call putstr_and_line
 
 main_end:
 
@@ -275,16 +238,15 @@ call [ExitProcess]
 
 
 ;variables for displaying messages
-file_open_message db 'opening: ',0
-file_seek_message db 'seek: ',0
 file_error_message db 'error: ',0
 end_of_file db 'EOF',0
 read_error_message db 'Failure during reading of file. Error number: ',0
 
-help_message db 'Welcome to chastehex! The tool for reading and writing bytes of a file!',0Ah,0Ah
-db 'To hexdump an entire file:',0Ah,0Ah,9,'chastehex file',0Ah,0Ah
-db 'To read a single byte at an address:',0Ah,0Ah,9,'chastehex file address',0Ah,0Ah
-db 'To write a single byte at an address:',0Ah,0Ah,9,'chastehex file address value',0Ah,0Ah,0
+help_message db 'chastehex by Chastity White Rose',0Ah,0Ah
+db 'hexdump a file:',0Ah,0Ah,9,'chastehex file',0Ah,0Ah
+db 'read a byte:',0Ah,0Ah,9,'chastehex file address',0Ah,0Ah
+db 'write a byte:',0Ah,0Ah,9,'chastehex file address value',0Ah,0Ah
+db 'The file must exist',0Ah,0
 
 ;function to move ahead to the next art
 ;only works after the filter has been applied to turn all spaces into zeroes
@@ -319,8 +281,7 @@ ret
 print_bytes_row:
 mov eax,[file_offset]
 mov [int_width],8
-call putint
-call putspace
+call putint_and_space
 
 mov ebx,byte_array
 mov ecx,[bytes_read]
@@ -329,8 +290,7 @@ next_byte:
 mov eax,0
 mov al,[ebx]
 mov [int_width],2
-call putint
-call putspace
+call putint_and_space
 
 inc ebx
 dec ecx
@@ -389,18 +349,7 @@ call putstring
 ret
 
 
-;function to display EOF with address
-show_eof:
 
-mov eax,[file_offset]
-mov [int_width],8
-call putint
-call putspace
-mov eax,end_of_file
-call putstring
-call putline
-
-ret
 
 ;variables for managing arguments
 arg_start  dd ? ;start of arg string
