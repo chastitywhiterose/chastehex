@@ -1,3 +1,7 @@
+/*
+This is the original C version of chastehex upon which the Assembly versions were based.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "chastelib.h"
@@ -109,13 +113,13 @@ int main(int argc, char *argv[])
  {
   c=fgetc(fp);
   int_width=8;
-  putstr(intstr(x));
+  putint(x);
   putstr(" ");
   if(c==EOF){putstr("EOF");}
   else
   {
    int_width=2;
-   putstr(intstr(c));
+   putint(c);
   }
   putstr("\n");
  }
@@ -128,10 +132,10 @@ int main(int argc, char *argv[])
   {
    c=strint(argv[argx]);
    int_width=8;
-   putstr(intstr(x));
+   putint(x);
    putstr(" ");
    int_width=2;
-   putstr(intstr(c));
+   putint(c);
    putstr("\n");
    fputc(c,fp);
    x++;
@@ -144,4 +148,3 @@ int main(int argc, char *argv[])
 }
 
 /* gcc -Wall -ansi -pedantic main.c -o chastehex */
-
