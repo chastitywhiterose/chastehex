@@ -76,7 +76,7 @@ mov edx,0;
 div dword [radix]
 cmp edx,10
 jb decimal_digit
-jae hexadecimal_digit
+jnb hexadecimal_digit
 
 decimal_digit: ;we go here if it is only a digit 0 to 9
 add edx,'0'
@@ -201,7 +201,7 @@ jmp strint_end
 process_char:
 
 cmp ecx,[radix] ;compare char with radix
-jae strint_end ;if this value is above or equal to radix, it is too high despite being a valid digit/alpha
+jnb strint_end ;if this value is above or equal to radix, it is too high despite being a valid digit/alpha
 
 mov edx,0 ;zero edx because it is used in mul sometimes
 mul  dword [radix] ;mul eax with radix
@@ -216,8 +216,7 @@ ret
 ;The utility functions below simply print a space or a newline.
 ;these help me save code when printing lots of strings and integers.
 
-space db ' ',0
-line db 0Ah,0
+space db ' ',0 ;a string containing only a space
 
 putspace:
 push eax
@@ -225,6 +224,13 @@ mov eax,space
 call putstring
 pop eax
 ret
+
+line db 0Ah,0 ;a string containing only a newline
+
+;the next function which pushes eax to the stack
+;moves the address of the line string and prints it with putstring
+;then it pops the original value of eax back from the stack before the function returns
+;this allows me to print a newline anywhere in the code without a single register changing
 
 putline:
 push eax
