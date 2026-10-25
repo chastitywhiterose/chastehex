@@ -21,6 +21,8 @@ push ebx
 push ecx
 push edx
 
+
+
 mov ebx,eax             ;copy eax to ebx to be used as index to the string
 
 putstring_strlen_start: ;this loop finds the length of the string as part of the putstring function
@@ -42,6 +44,8 @@ mov ecx,eax      ;pointer/address of string to write
 mov ebx,1        ;write to the STDOUT file
 mov eax,4        ;write (kernel opcode 4 on 32 bit systems)
 int 80h          ;system call for 32-bit Linux kernel
+
+
 
 pop edx
 pop ecx
@@ -67,7 +71,7 @@ int_width dd 8 ;default width of integers. Extra zeros prefixed if more than 1
 
 intstr:
 
-mov ebx,int_string_end-1 ;find address of lowest digit(just before the newline 0Ah)
+mov ebx,int_string_end-1 ;find address of lowest digit
 mov ecx,1
 
 digits_start:
